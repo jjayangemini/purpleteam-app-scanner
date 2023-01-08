@@ -10,8 +10,9 @@
 import FormStandard from './formStandard.js';
 import ScriptLink from './scriptLink.js';
 import MaintainJwt from './maintainJwt.js';
+import RestApi from './restApi.js';
 
-export default { FormStandard, ScriptLink, MaintainJwt };
+export default { FormStandard, ScriptLink, MaintainJwt, RestApi };
 
 // Types of authentication that will need supporting:
 

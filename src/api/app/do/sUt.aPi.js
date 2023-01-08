@@ -35,8 +35,11 @@ class Api extends Sut {
       }),
       userId: Joi.number().integer().positive(), // Provided by Zap.
       authentication: Joi.object({
-        emissaryAuthenticationStrategy: Joi.string().min(2).regex(/^[-\w/]{1,200}$/).default('MaintainJwt'),
-        route: Joi.string().min(2).regex(/^\/[-?&=\w/]{1,1000}$/)
+        emissaryAuthenticationStrategy: Joi.string().required().valid('MaintainJwt', 'RestApi'),
+        route: Joi.string().min(2).regex(/^\/[-?&=\w/]{1,1000}$/),
+        tokenUrl: Joi.string().min(2),
+        clientId: Joi.string().min(2),
+        clientSecret: Joi.string().min(2)
       }),
       testSession: Joi.object({
         type: Joi.string().valid('appScanner').required(),

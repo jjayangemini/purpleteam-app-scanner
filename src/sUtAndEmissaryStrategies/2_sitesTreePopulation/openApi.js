@@ -8,6 +8,7 @@
 // by the Apache License, Version 2.0
 
 import { promises as fsPromises } from 'fs';
+import * as oldfs from "fs";
 import { promisify } from 'util';
 import { randomBytes } from 'crypto';
 import config from '../../../config/config.js';
@@ -59,10 +60,10 @@ class OpenApi extends SitesTreePopulation {
     const fileNameNoPrefix = 'OpenApiDefinition';
     const fileNameWithPrefix = `${rndFilePrefix}-${fileNameNoPrefix}`;
     const buff = Buffer.from(importFileContentBase64, 'base64');
-
+      
     await fsPromises.writeFile(`${appTesterUploadDir}${fileNameWithPrefix}`, buff)
       .then(() => {
-        this.publisher.pubLog({ testSessionId, logLevel: 'info', textData: `OpenAPI definition: "${fileNameNoPrefix}" was successfully written to the App Tester upload directory.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
+        this.publisher.pubLog({ testSessionId, logLevel: 'info', textData: `OpenAPI definition: "${appTesterUploadDir}${fileNameWithPrefix}" was successfully written to the App Tester upload directory.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
       })
       .catch((err) => {
         const buildUserErrorText = `Error occurred while attempting to write the OpenAPI definition from file: "${fileNameNoPrefix}" to the App Tester upload directory for the Emissary consumption`;
@@ -71,11 +72,24 @@ class OpenApi extends SitesTreePopulation {
         this.log.error(adminErrorText, { tags: [`pid-${process.pid}`, this.#fileName, methodName] });
         throw new Error(adminErrorText);
       });
+
+    await fsPromises.access(`${appTesterUploadDir}${fileNameWithPrefix}`, oldfs.constants.F_OK)
+      .then(() => {
+        this.publisher.pubLog({ testSessionId, logLevel: 'info', textData: `OpenAPI definition: "${appTesterUploadDir}${fileNameWithPrefix}" can be accessed.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
+      })
+      .catch((err) => {
+        const buildUserErrorText = `Error occurred while attempting to access the OpenAPI definition from file: "${fileNameNoPrefix}" to the App Tester upload directory for the Emissary consumption`;
+        const adminErrorText = `${buildUserErrorText}, for Test Session with id: "${testSessionId}", Error was: ${err.message}`;
+        this.publisher.publish({ testSessionId, textData: `${buildUserErrorText}.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
+        this.log.error(adminErrorText, { tags: [`pid-${process.pid}`, this.#fileName, methodName] });
+        throw new Error(adminErrorText);
+      });
+
     await this.zAp.aPi.openapi.importFile({ file: `${emissaryUploadDir}${fileNameWithPrefix}`, target: this.baseUrl, contextId })
       .then((resp) => {
         this.publisher.pubLog({ testSessionId, logLevel: 'info', textData: `Loaded OpenAPI definition from file: "${fileNameNoPrefix}" into the Emissary, for Test Session with id: "${testSessionId}". Response was: ${JSON.stringify(resp)}.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
       }).catch((err) => {
-        const buildUserErrorText = `Error occurred while attempting to load the OpenAPI definition from file: "${fileNameNoPrefix}" into the Emissary`;
+        const buildUserErrorText = `Error occurred while attempting to load the OpenAPI definition from file: "${emissaryUploadDir}${fileNameWithPrefix}" into the Emissary ${this.baseUrl}`;
         const adminErrorText = `${buildUserErrorText}, for Test Session with id: "${testSessionId}", Error was: ${err.message}`;
         this.publisher.publish({ testSessionId, textData: `${buildUserErrorText}.`, tagObj: { tags: [`pid-${process.pid}`, this.#fileName, methodName] } });
         this.log.error(adminErrorText, { tags: [`pid-${process.pid}`, this.#fileName, methodName] });
